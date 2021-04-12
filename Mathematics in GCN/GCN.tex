@@ -1,0 +1,688 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+\usepackage[ruled,linesnumbered]{algorithm2e}
+\usepackage{graphicx}
+\usepackage[absolute,overlay]{textpos}
+\usepackage{tikz}
+\usepackage{setspace}
+\usepackage{amsmath}
+\usetikzlibrary{shapes.geometric, arrows}
+\title[Graph Convolutional Network]{Mathematics in Graph Convolutional Network}
+\author{Zhenmiao Zhang}
+\setbeamertemplate{footline}[frame number]
+\setbeamercolor{footline}{fg=beamer@blendedblue}
+\setbeamerfont{section in sidebar}{size=\fontsize{5.5}{6}\selectfont}
+\setbeamerfont{subsection in sidebar}{size=\fontsize{5}{5.5}\selectfont}
+\begin{document}
+
+	\begin{frame}
+	    \maketitle
+	\end{frame}
+	
+	\section{Overview}
+		\begin{frame}{Contents}
+			\small
+			\tableofcontents[currentsection,hideallsubsections]
+		\end{frame}
+		\begin{frame}{Overview}
+			\begin{block}{First Part: Theoriems in GCN}
+				\begin{itemize}
+					\item From Fourier Series to Fourier Transform
+					\item Spectral Graph Theory: Graph Laplacian
+					\item Graph Fourier Transform and Convolution
+				\end{itemize}
+			\end{block}
+			\begin{block}{Second Part: Three classical GCN models}
+				\begin{itemize}
+					\item Convolutional Neural Networks on Graphs with Fast Localized Spectral Filtering\\(NIPS 2016)
+					\item Semi-Supervised Classification with Graph Convolutional Networks \\(ICLR 2017)
+					\item Modeling Relational Data with Graph Convolutional Networks \\(ESWC 2018)
+				\end{itemize}
+			\end{block}
+		\end{frame}
+	
+	\section[Fourier Analysis]{From Fourier Series to Fourier Transform}
+		\begin{frame}{Contents}
+			\small
+			\tableofcontents[currentsection,hideallsubsections]
+		\end{frame}
+	\begin{frame}{Inner Product}
+		For real vector space ($\boldsymbol{x}, \boldsymbol{y} \in \mathbb{R}^n$):
+		\begin{align*}
+			<\boldsymbol{x}, \boldsymbol{y}> = \sum_{i=1}^{n}x_iy_i.
+		\end{align*}
+		For complex vector space ($\boldsymbol{x}, \boldsymbol{y} \in \mathbb{C}^n$):
+		\begin{align*}
+			<\boldsymbol{x}, \boldsymbol{y}> = \sum_{i=1}^{n}x_i\overline{y_i}.\ (this\ is\ to\ ensure\ <\boldsymbol{x}, \boldsymbol{x}>\geq 0)
+		\end{align*}
+		For complex and square integrable function space: \\($f,g \in L^2[a,b]$, i.e., $f: [a,b] \rightarrow \mathbb{C}, \int_{a}^{b} | f(t) |^2 \ dt < \infty$)
+		\begin{align*}
+			<f,g> = \int_{a}^{b} f(t) \overline{g(t)}\ dt.
+		\end{align*}
+	\end{frame}
+	\begin{frame}{Orthogonal Functions Basis}
+		$\mathcal{E}=\{e_1, e_2, ..., e_n\}$ is orthogonal functions basis if:
+		\begin{equation*}
+			<e_i, e_j>
+			\begin{cases}
+			=0 & \text{ for } i \neq j,\\
+			>0 & \text{ for }  i = j.
+			\end{cases}
+		\end{equation*}
+
+		
+		Any function $h$ lies in the space of $\mathcal{E}$ can be written as:
+		\begin{align*}
+			h = \sum_{i=1}^{n} \frac{<h, e_i>e_i}{<e_i, e_i>}.
+		\end{align*}
+	\end{frame}
+	\begin{frame}{Fourier Series (Definition)}
+		\begin{block}{Fourier Series}
+			Let f(x) be a function of period T. If f(x) is integrable and absolutely integrable on $[-\frac{T}{2}, \frac{T}{2}]$, it can be written as:
+			\begin{align*}
+				f(x) \sim A_0 + \sum_{k=1}^{\infty}A_k\sin (kwx + \varphi_k) = \frac{a_0}{2} + \sum_{k=1}^{\infty}(a_k\cos kwx + b_k\sin kwx),
+			\end{align*}
+			where
+			\begin{align*}
+				& w=\frac{2\pi}{T} \text{ is the angular frequency}, A_k = \sqrt{a_k^2 + b_k^2} \text{ is amplitude},\\
+				& A_k\sin (kwx + \varphi_k)\text{ has period } T/k,\text{ frequency } k/T,\\
+				& a_k = \frac{2}{T} \int_{-T/2}^{T/2}f(x)\cos kwx\ dx, b_k = \frac{2}{T} \int_{-T/2}^{T/2}f(x)\sin kwx\ dx.
+			\end{align*}
+		\end{block}
+	\end{frame}
+	\begin{frame}{Fourier Series (Deduction)}
+		Assume $f(x) = \frac{a_0}{2} + \sum_{k=1}^{\infty}(a_k\cos kwx + b_k\sin kwx)$ (uniform convergence):
+		\begin{align*}
+			& \int_{-T/2}^{T/2}f(x)\cos nwx\ dx = \frac{a_0}{2}\int_{-T/2}^{T/2} \cos nwx\ dx \\
+			& + \sum_{k=1}^{\infty}\big(a_k\int_{-T/2}^{T/2}\cos kwx \cos nwx\ dx + b_k\int_{-T/2}^{T/2}\sin kwx \cos nwx\ dx\big) \\
+			& = \sum_{k=1}^{\infty}\big(a_k\int_{-T/2}^{T/2}\frac{\cos (k+n)wx + \cos (k-n)wx}{2}\ dx \\
+			& + b_k\int_{-T/2}^{T/2}\frac{\sin (k+n)wx + \sin (k-n)wx}{2}\ dx\big) \\
+			& = a_n\int_{-T/2}^{T/2}\frac{\cos 2nwx + 1}{2}\ dx + b_n\int_{-T/2}^{T/2}\frac{\sin 2nwx}{2}\ dx = \frac{T}{2}a_n \\
+			& \Longrightarrow a_n = \frac{2}{T} \int_{-T/2}^{T/2}f(x)\cos nwx\ dx.
+		\end{align*}
+	\end{frame}
+
+	\begin{frame}{Fourier Series (Deduction)}
+		\begin{align*}
+			& \int_{-T/2}^{T/2}f(x)\sin nwx\ dx = \frac{a_0}{2}\int_{-T/2}^{T/2} \sin nwx\ dx \\
+			& + \sum_{k=1}^{\infty}\big(a_k\int_{-T/2}^{T/2}\cos kwx \sin nwx\ dx + b_k\int_{-T/2}^{T/2}\sin kwx \sin nwx\ dx\big) \\
+			& = \sum_{k=1}^{\infty}\big(a_k\int_{-T/2}^{T/2}\frac{\sin (k+n)wx - \sin (k-n)wx}{2}\ dx \\
+			& - b_k\int_{-T/2}^{T/2}\frac{\cos (k+n)wx - \cos (k-n)wx}{2}\ dx\big) \\
+			& = a_n\int_{-T/2}^{T/2}\frac{\sin 2nwx}{2}\ dx - b_n\int_{-T/2}^{T/2}\frac{\cos 2nwx - 1}{2}\ dx = \frac{T}{2}b_n \\
+			& \Longrightarrow b_n = \frac{2}{T} \int_{-T/2}^{T/2}f(x)\sin nwx\ dx.
+		\end{align*}
+	\end{frame}
+	\begin{frame}{Fourier Series (Complex Form)}
+		Euler's formula:
+		\begin{align*}
+			& e^{ix} = \cos x + i\sin x, e^{-ix} = \cos x - i\sin x \\
+			& \Longrightarrow \cos x = \frac{e^{ix} + e^{-ix}}{2}, \sin x = \frac{e^{ix}-e^{-ix}}{2i}.
+		\end{align*}
+		Therefore, Fourier series can be transformed to:
+		\begin{align*}
+			& f(t) \sim \frac{a_0}{2} + \sum_{n=1}^{\infty}(a_n\cos nwt + b_n\sin nwt) \\
+			&  = \frac{a_0}{2} + \sum_{n=1}^{\infty}\big(\frac{a_n-ib_n}{2}e^{inwt} + \frac{a_n + ib_n}{2}e^{-inwt}\big).
+		\end{align*}
+		Let $\dot{c}_0 = a_0, \dot{c}_n = a_n-ib_n, \dot{c}_{-n} = a_n + ib_n$ (complex amplitude), then:
+		\begin{align*}
+			f(t) \sim \frac{1}{2}\sum_{n=-\infty}^{\infty}\dot{c}_ne^{inwt}, \text{ with amplitude }A_n = |\dot{c}_{-n}| = |\dot{c}_{n}|.
+		\end{align*}
+	\end{frame}
+
+	\begin{frame}{Fourier Series (Complex Form)}
+		\begin{block}{Fourier Series (Complex Form)}
+			\begin{align*}
+				f(t) \sim \frac{1}{2}\sum_{n=-\infty}^{\infty}\dot{c}_ne^{inwt}, \text{ where }\dot{c}_n = \frac{2}{T}\int_{-T/2}^{T/2}f(t)e^{-inwt}\ dt.
+			\end{align*}
+		\end{block}
+	\end{frame}
+	
+	\begin{frame}{Orthogonality}
+		\begin{proof}[Proof: $\{e^{inwt} \mid n\in\mathbb{Z}\}$ is orthogonal basis.]
+			\begin{align*}
+				& <e^{inwt}, e^{inwt}> = \int_{-T/2}^{T/2}e^{inwt}\overline{e^{inwt}}\ dt = \int_{-T/2}^{T/2} e^{inwt}e^{-inwt}\ dt = T > 0, \\
+				& <e^{inwt}, e^{imwt}> = \int_{-T/2}^{T/2}e^{inwt}\overline{e^{imwt}}\ dt = \frac{e^{i(n-m)wt}}{i(n-m)w} \biggr\rvert_{-T/2}^{T/2} = 0.\ (w = \frac{2\pi}{T})
+			\end{align*}
+		\end{proof}
+		\begin{align*}
+			& f(t) \sim \frac{1}{2}\sum_{n=-\infty}^{\infty}\dot{c}_ne^{inwt} = \frac{1}{T}\sum_{n=-\infty}^{\infty}\big[\int_{-T/2}^{T/2}f(x)e^{-inwx}\ dx\big]e^{inwt} \\
+			& = \sum_{n=-\infty}^{\infty}\frac{<f(t), e^{inwt}>}{<e^{inwt}, e^{inwt}>}e^{inwt} = \sum_{n=-\infty}^{\infty}\frac{<f(t), e^{inwt}>}{T}e^{inwt}.
+		\end{align*}
+	\end{frame}
+	
+	\begin{frame}{Fourier Transform (Definition)}
+		\begin{block}{Fourier Transform}
+			f(x) is absolutely integrable on $(-\infty, +\infty)$. The Fourier Transform of f(x) is defined as:
+			\begin{align*}
+				\mathcal{F}[f] = F(w) = \int_{-\infty}^{+\infty}f(x)e^{-iwx}\ dx.
+			\end{align*}
+			The Inverse Fourier Transform can be written as:
+			\begin{align*}
+				f(x) = \mathcal{F}^{-1}[\mathcal{F}[f]] = \frac{1}{2\pi}\int_{-\infty}^{+\infty}F(w)e^{iwx}\ dw.
+			\end{align*}
+		\end{block}
+	\end{frame}
+	
+	\begin{frame}{Orthogonality}
+		\begin{proof}[Proof: $\{e^{iwt} \mid w\in\mathbb{R}\}$ is orthogonal basis (namly Fourier basis).]
+			\begin{align*}
+				& <e^{iw_1t}, e^{iw_2t}> = \int_{-\infty}^{+\infty}e^{iw_1t}\overline{e^{iw_2t}}\ dt = \int_{-\infty}^{+\infty}e^{i(w_1-w_2)t}\ dt \\
+				& = \lim_{a \rightarrow \infty} \int_{-a}^{+a}e^{i(w_1-w_2)t}\ dt = \lim_{a \rightarrow \infty} \frac{e^{i(w_1-w_2)t}}{i(w_1-w_2)} \biggr \rvert_{-a}^{a} = \lim_{a \rightarrow \infty} \frac{2i\sin (w_1-w_2)a}{i(w_1-w_2)} \\
+				& = \lim_{a \rightarrow \infty} 2a \frac{\sin (w_1-w_2)a}{(w_1-w_2)a} = 2a\pi \delta((w_1-w_2)a) = 2a\pi\frac{\delta(w_1-w_2)}{a} \\
+				& = 2\pi\delta(w_1-w_2), \text{ where }\delta\text{ is Dirac delta function:}
+			\end{align*}	
+			\begin{equation*}
+				\delta(x) \approx 
+				\begin{cases}
+					+\infty, &x=0,\\
+					0, &x\neq 0.
+				\end{cases}
+			\end{equation*}
+		\end{proof}
+	\end{frame}
+	\begin{frame}{Orthogonality}
+		Inverse Fourier Transform:
+		\begin{align*}
+			f(x) = \mathcal{F}^{-1}[\mathcal{F}[f]] = \frac{1}{2\pi}\int_{-\infty}^{+\infty}F(w)e^{iwx}\ dw.
+		\end{align*}
+		We can write Fourier Transform F(w) as:
+		\begin{align*}
+			<f(x), e^{iwt}>
+		\end{align*}
+		Then f(x) can be transformed to:
+		\begin{align*}
+			&f(x) = \frac{1}{2\pi}\int_{-\infty}^{+\infty}<f(x), e^{iwt}>e^{iwx}\ dw
+		\end{align*}
+	\end{frame}
+	\begin{frame}{Fourier Series vs. Fourier Transform}
+		Fourier Series:
+		\begin{itemize}
+			\item f(x) has period T.
+			\item $f(x) = \frac{1}{2}\sum_{n=-\infty}^{+\infty}\dot{c}_ne^{inwx}, \text{ where }\dot{c}_n = \frac{2}{T}\int_{-T/2}^{T/2}f(x)e^{-inwx}\ dx.$
+		\end{itemize}
+		Fourier Transform:
+		\begin{itemize}
+			\item f(x) is non-periodic function.
+			\item $f(x) = \frac{1}{2\pi}\int_{-\infty}^{+\infty}F(w)e^{iwx}\ dw, \text{ where } F(w) = \int_{-\infty}^{+\infty}f(x)e^{-iwx}\ dx.$
+		\end{itemize}
+	\end{frame}
+	\begin{frame}{From Fourier Series to Fourier Transform}
+		For any non-periodic function $f(x)$, we can construct a periodic function $f_T(x)$ which satisfies $f_T(x) = f(x)$ for $|x| < T/2$. Then we have:
+		\begin{align*}
+			\lim_{T \rightarrow +\infty} f_T(x) = f(x).
+		\end{align*}
+		We can write $f_T(x)$ using Fourier Series:
+		\begin{align*}
+			& f_T(x) = \frac{1}{2}\sum_{n=-\infty}^{+\infty}\dot{c}_ne^{inwt} = \frac{1}{2}\sum_{n=-\infty}^{+\infty}\big[\frac{2}{T}\int_{-T/2}^{T/2}f(x)e^{-inwx}\ dx\big]e^{inwt} \\
+			& = \frac{1}{T}\sum_{n=-\infty}^{+\infty}\big[\int_{-T/2}^{T/2}f(x)e^{-inwx}\ dx\big]e^{inwt}.
+		\end{align*}
+	\end{frame}
+	\begin{frame}{From Fourier Series to Fourier Transform}
+		\begin{align*}
+			f(x) = \lim_{T \rightarrow +\infty} \frac{1}{T}\sum_{n=-\infty}^{+\infty}\big[\int_{-T/2}^{T/2}f(x)e^{-iw_nx}\ dx\big]e^{iw_nt}, \text{ where } w_n = nw = \frac{2\pi n}{T}.
+		\end{align*}
+		Denote $\Delta w = w_n - w_{n-1} = \frac{2\pi}{T}$, then $T = \frac{2\pi}{\Delta w}$. Therefore,
+		\begin{align*}
+			& f(x) = \lim_{\Delta w \rightarrow 0} \frac{1}{2\pi}\sum_{n=-\infty}^{+\infty}\big[\int_{-T/2}^{T/2}f(x)e^{-iw_nx}\ dx\big]e^{iw_nt} \Delta w \\
+			& = \frac{1}{2\pi}\int_{-\infty}^{+\infty}\big[\int_{-\infty}^{\infty}f(x)e^{-iwx}\ dx\big]e^{iwt} \ dw = \frac{1}{2\pi}\int_{-\infty}^{+\infty}F(w)e^{iwt} \ dw
+		\end{align*}
+		\textbf{Fourier Transform F(w) is the proposition of $e^{iwt}$ in f(x). We say F(w) is the representation in frequency (or spectral) domain.}
+	\end{frame}
+
+	\begin{frame}{Fourier Transform： Properties}
+		\begin{itemize}
+			\item Linear combination
+			\[
+			\mathcal{F}[af+bg] = a\mathcal{F}[f] + b\mathcal{F}[g]
+			\]
+			\item Translation
+			\[
+			\mathcal{F}[f(x-c)](\lambda) = e^{-i\lambda c}\mathcal{F}[f](\lambda)
+			\]
+			\item Rescaling
+			\[
+			\mathcal{F}[f(cx)](\lambda) = \frac{1}{c}e^{-i\lambda c}\mathcal{F}[f](\frac{\lambda}{c})
+			\]
+		\end{itemize}
+	\end{frame}
+	
+	\begin{frame}{Fourier Transform: Convolution}
+		\begin{block}{Convolution}
+			The convolution of two functions f and g is defined as
+			\[
+			f*g\ (x) = \int_{-\infty}^{+\infty}f(x-t)g(t)\ dt.
+			\]
+		\end{block}
+		\begin{block}{Convolution Theorem}
+			\begin{align*}
+				&\mathcal{F}[f*g] = \mathcal{F}[f]\mathcal{F}[g] \\
+				&\mathcal{F}[fg] = \mathcal{F}[f]*\mathcal{F}[g] \\
+				&\mathcal{F}^{-1}[\mathcal{F}[f]\mathcal{F}[g]] = f*g \\
+				&\mathcal{F}^{-1}[\mathcal{F}[f]*\mathcal{F}[g]] = fg
+			\end{align*}
+		\end{block}
+	\end{frame}
+	
+	\begin{frame}{Convolution Theorem Proof}
+		\begin{proof}[Proof: Convolution Theorem]
+			\begin{align*}
+				& f(x-t) = \mathcal{F}^{-1}[e^{-i\lambda t}\mathcal{F}(f)](x) = \frac{1}{2\pi}\int_{-\infty}^{+\infty}\mathcal{F}[f](\lambda)e^{i\lambda (x-t)}\ d\lambda, \\
+				& Therefore, f*g\ (x) =\\
+				& \int_{-\infty}^{+\infty}f(x-t)g(t)\ dt = \int_{-\infty}^{+\infty}\frac{1}{2\pi}\int_{-\infty}^{+\infty}\mathcal{F}[f](\lambda)e^{i\lambda (x-t)}\ d\lambda\ g(t)\ dt \\
+				& = \frac{1}{2\pi}\int_{-\infty}^{+\infty}\mathcal{F}[f](\lambda)e^{i\lambda x}\int_{-\infty}^{+\infty}e^{-i\lambda t}\ g(t) \ dt\ d\lambda \\
+				& = \frac{1}{2\pi}\int_{-\infty}^{+\infty}\mathcal{F}[f](\lambda)\mathcal{F}[g](\lambda)e^{i\lambda x}\ d\lambda = \mathcal{F}^{-1}[\mathcal{F}[f]\mathcal{F}[g]](x).
+			\end{align*}
+		\end{proof}
+	\end{frame}
+	\begin{frame}{Linear and Time Invariant Filter}
+		A $filter$ $\mathcal{L}$ maps $f$ in to another function $\mathcal{L}[f]$.
+		
+		Linear filter: $\mathcal{L}[af+bg] = a\mathcal{L}[f] + b\mathcal{L}[g]$.
+		
+		Time invariant filter: $\mathcal{L}[f(x-c)](t) = \mathcal{L}[f(x)](t-c)$.
+		\begin{block}{Theorem}
+			Let L be a linear and time invariant filter. Then there exists a function h such that
+			\[
+			\mathcal{L}[f] = f*h.
+			\]
+			Therefore,
+			\[
+			\mathcal{F}[\mathcal{L}[f]] = \mathcal{F}[f]\mathcal{F}[h].
+			\]
+		\end{block}
+	\end{frame}
+	
+	\section[Graph Laplacian]{Spectral Graph Theory: Graph Laplacian}
+		\begin{frame}{Contents}
+			\small
+		\tableofcontents[currentsection,hideallsubsections]
+	\end{frame}
+	\begin{frame}{Graph Laplacian (Definition)}
+		\begin{block}{Graph Laplacian}
+			The Graph Laplacian is defined as
+			\[
+			\mathcal{L}= D-W,
+			\]
+			where W is adjacency matrix, D is a diagonal matrix with $D_{ii} = \sum_{j}w_{ij}$. \\
+			The normalized Graph Laplacian is defined as
+			\[
+			\mathcal{L} = D^{-1/2}(D-W)D^{-1/2} = I - D^{-1/2}WD^{-1/2}
+			\]
+		\end{block}
+	\end{frame}
+	\begin{frame}{Graph Laplacian (Definition)}
+		Non-normalized Graph Laplacian:
+		\begin{equation*}
+			\mathcal{L}_{ij}=\begin{cases}
+				d_i, & i=j\ (when\ W_{ii} = 0)\\
+				-w_{ij}, & (i,j) \in \mathcal{E} \\
+				0, &otherwise
+			\end{cases}
+		\end{equation*}
+		Normalized Graph Laplacian:
+		\begin{equation*}
+			\mathcal{L}_{ij}=\begin{cases}
+				1, & i=j\ (when\ W_{ii} = 0) \\
+				-\frac{w_{ij}}{\sqrt{d_id_j}}, & (i,j) \in \mathcal{E} \\
+				0, &otherwise
+			\end{cases}
+		\end{equation*}
+	\end{frame}
+	\begin{frame}{Eigenvalues decomposition}
+		\begin{block}{Eigenvalues decomposition}
+		We can decompose any square, symmetric $n\times n$ matrix S as
+		\[
+		S=U\Lambda U^T=\sum_{i=0}^{n-1}\lambda_iu_iu_i^T,
+		\]
+		where $\Lambda=diag(\lambda_0,...,\lambda_{n-1})$, with $\lambda_0\leq...\leq\lambda_{n-1}$ the eigenvalues. $U=[u_0,...,u_{n-1}]$ is a $n \times n$ orthonormal matrix ($U^TU=I$) that contains the eigenvectors.
+		\end{block}
+	\end{frame}
+	\begin{frame}{Graph Laplacian (Spectral Properties)}
+		Why Graph Laplacian (GL) is so important?
+		\begin{itemize}
+			\item GL is a symmetric matrix, that means GL has real eigenvalues and eigenvectors, and \textbf{the eigenvectors forms an orthogonal basis}.
+			\item GL is positive semidefinite, and the eigenvalues are non-negative.
+			\item GL has an eigenpair $(\lambda_0 = 0, \textbf{u}_0 = \textbf{1})$, this is because $\sum_{j} \mathcal{L}_{ij} = 0$, and $\mathcal{L}\textbf{u}_0 = 0\textbf{u}_0$.
+			\item The multiplicity of the eigenvalue zero is equal to the number of connected components of the graph.
+			\item Asymmetric GL: $D^{-1}(D-W) = I-D^{-1}W = P$ is the Markov random walk matrix.
+			\item For Normalized GL, $0=\lambda_0\leq \lambda_1 ... \leq \lambda_{n-1} \leq 2$, with $\lambda_{n-1}=2$ if and only if G is bipartite.
+		\end{itemize}
+	\end{frame}
+	\begin{frame}{Graph Laplacian (Spectral Properties)}
+		\begin{block}{Property}
+			If G is connected, the eigenvectors associated to the $d$ smallest non-zero eigenvalues provides the best d-dimensional embedding of G.
+		\end{block}
+		Graph embedding:
+		\newline\newline
+		Find $\textbf{f}: V \rightarrow \mathbb{R}^d,\ \textbf{f}(v_i) = [f_1(v_i), f_2(v_i), ..., f_d(v_i)]$, that minimizes
+		\[
+		F^T\mathcal{L}F = \sum_{(i,j)\in\mathcal{E}}W_{ij}\lVert\textbf{f}(v_i)-\textbf{f}(v_j)\lVert^2,\text{ s.t. } F^T\textbf{1} = \textbf{0},
+		\]
+		where $F=[\textbf{f}_1, \textbf{f}_2, ..., \textbf{f}_d]$.
+		Imposing $\lVert \textbf{f}_i\lVert=1$, the solution is given by
+		\[
+		F=[\textbf{u}_1, \textbf{u}_2,...,\textbf{u}_d].
+		\]
+	\end{frame}
+	
+	\section[Graph Fourier Transform]{Graph Fourier Transform and Graph convolution}
+	\begin{frame}{Contents}
+		\small
+		\tableofcontents[currentsection,hideallsubsections]
+	\end{frame}
+	\begin{frame}{Graph Fourier Transform (Definition)}
+		\begin{block}{Graph Fourier Transform}
+			Let $f: V \rightarrow \mathbb{R}$, the Graph Fourier Transform os $f$ is defined as
+			\[
+			\mathcal{F}[f](\lambda_l) = \hat{f}(\lambda_l) = <f, u_l> = \sum_{i=1}^{n}f(i)u_l(i)
+			\]
+		\end{block}
+		\begin{block}{Inverse Graph Fourier Transform}
+			Let $f: V \rightarrow \mathbb{R}$, the Inverse Graph Fourier Transform os $f$ is defined as
+			\[
+			\mathcal{F}^{-1}[\mathcal{F}[f]](i) = f(i) = \sum_{l=0}^{n-1}\hat{f}(\lambda_l)u_l(i)
+			\]
+		\end{block}
+		The eigenvalues of $\mathcal{L}$ represent the frequencies, and the eigenvectors are the Fourier basis. We say $\hat{f}$ is spectral domain, and $f$ is vertex domain. 
+	\end{frame}
+	
+	\begin{frame}{Graph Convolution (Definition)}
+		The classical convolution is defined as
+		\[
+		f*g\ (x) = \int_{-\infty}^{+\infty}f(x-t)g(t)\ dt.
+		\]
+		This formula cannot be applied on graph because the translation $f(x-t)$ is not defined in the context of graphs.\\
+		However, convolution can be defined as
+		\[
+		f*g = \mathcal{F}^{-1}[\mathcal{F}[f*g]].
+		\]
+		We have $\mathcal{F}[f*g] = \mathcal{F}[f]\mathcal{F}[g]$. We can define Graph Convolution as
+		\[
+		f*g\ (i) = \sum_{l=0}^{n-1}\hat{f}(\lambda_l)\hat{g}(\lambda_l)u_l(i) = \sum_{l=0}^{n-1} u_l(i)\hat{g}(\lambda_l)\sum_{j=1}^{n}u_l(j)f(j).
+		\]
+	\end{frame}
+	
+	\begin{frame}{Graph Convolution (Properties)}
+		Properties of Graph Convolution (it satisfies all convolution theorem):
+		\begin{itemize}
+			\item $\mathcal{F}[f*g] = \mathcal{F}[f]\mathcal{F}[g]$
+			\item $f*g=g*f$
+			\item $f*(g+h) = f*g + f*h$
+			\item $\sum_{i=1}^{n}f*g\ (i) = \sqrt{n}\ \hat{f}(0)\ \hat{g}(0)$
+		\end{itemize}
+	\end{frame}
+	\begin{frame}{Graph Filter (The Fundamental of GCN)}
+		Consider a filter on $f(i)$ defined as $\mathcal{L}[f](i)=f*h\ (i).$
+		
+		According to definition of convolution,
+		\[
+		\mathcal{L}[f](i)=f*h\ (i)=\sum_{l=0}^{n-1}\hat{f}(\lambda_l)\hat{h}(\lambda_l)u_l(i).
+		\]
+		Supposing $\hat{h}(\lambda_l)$ \textbf{takes polynomial on spectral domain},
+		\[
+		\hat{h}(\lambda_l) = \sum_{k=0}^{K}a_k\lambda_l^k.
+		\]
+		Then we get
+		\[
+		\mathcal{L}[f](i) = \sum_{j=1}^{n}f(j)\sum_{k=0}^{K}a_k\sum_{l=0}^{n-1}\lambda_l^ku_l(j)u_l(i).
+		\]
+	\end{frame}
+	\begin{frame}{Graph Filter (The Fundamental of GCN)}
+		\[
+		\mathcal{L}[f](i) = \sum_{j=1}^{n}f(j)\sum_{k=0}^{K}a_k\sum_{l=0}^{n-1}\lambda_l^ku_l(j)u_l(i).
+		\]
+		We have
+		\[
+		(\mathcal{L}^k)_{ij} = \sum_{l=0}^{n-1}\lambda_l^ku_l(j)u_l(i),
+		\]
+		and $(\mathcal{L}^k)_{ij}=0$ if the shortest distance between nodes i and j is greater than k.
+		Let
+		\[
+		b_{ij} = \sum_{k=0}^{K}a_k(\mathcal{L}^k)_{ij},
+		\]
+		we get
+		\[
+		\mathcal{L}[f](i) = \sum_{j \in N_k(i)} b_{ij}f(j).
+		\]
+	\end{frame}
+	\begin{frame}{Graph Filter (The Fundamental of GCN)}
+		Now we get
+		\[
+		\mathcal{L}[f](i)=f*h\ (i)=\sum_{j \in N_k(i)} b_{ij}f(j)
+		\]
+		with the assumption that
+		\[
+		\hat{h}(\lambda_l) = \sum_{k=0}^{K}a_k\lambda_l^k.
+		\]
+		\textbf{Therefore, if the filter is a K-order polynomial on the spectral domain, the filtered f*h is a linear combination of the original signals in the K-neighborhood of node i}.
+	\end{frame}
+
+
+	\section[GCN NIPS 2016]{Convolutional Neural Networks on Graphs with Fast Localized Spectral Filtering (NIPS 2016)}
+		\begin{frame}{Contents}
+			\small
+			\tableofcontents[currentsection,hideallsubsections]
+		\end{frame}
+		\begin{frame}{GCN with Fast Localized Spectral Filtering}
+			\begin{block}{Overview of GCN with Fast Localized Spectral Filtering}
+				\begin{itemize}
+					\item Task: New theoretical formulation
+					\item Input: Undirected weighted graph G
+				\end{itemize}
+		\end{block}
+		\begin{block}{Contribution}
+			\begin{itemize}
+				\item Spectral filtering: Propose a theoretical formulation of CNNs on graph.
+				\item Localized: The proposed spectral filters are provable to be strictly localized in a ball of radius K (K hops).
+				\item Fast: Avoid the expensive eigenvalue decomposition for Fourier basis, leading to a linear complexity w.r.t the input data size n.
+			\end{itemize}
+			\end{block}
+		\end{frame}
+	\begin{frame}{Spectral filtering}
+		A signal x filtered by gθ is defined as
+		\[
+		y=g_\theta(L)x = g_\theta(U\Lambda U^T)x = Ug_\theta(\Lambda)U^Tx.
+		\]
+		Recall that we analyzed
+		\[
+		f*g\ (i) = \sum_{l=0}^{n-1} u_l(i)\hat{g}(\lambda_l)\sum_{j=1}^{n}u_l(j)f(j).
+		\]
+	\end{frame}
+	\begin{frame}{Polynomial parametrization}
+		 The polynomial filter is defined as
+		 \[
+		 g_\theta(\Lambda) = \sum_{k=0}^{K-1}\theta_k\Lambda^k.
+		 \]
+		 Recall that we analyzed
+		 \[
+		 \hat{g}(\lambda_l) = \sum_{k=0}^{K}a_k\lambda_l^k.
+		 \]
+		 The filter is K-localized. The learning complexity is O(k), the same complexity as classical CNNs.
+	\end{frame}
+	\begin{frame}{Recursive formulation for fast filtering}
+		\begin{itemize}
+			\item The cost to filter a signal x as $y=Ug_\theta(\Lambda)U^Tx$ is still high with $O(n^2)$ operations because of the multiplication with the Fourier basis U.
+			\item A solution to this problem is to parametrize $g_\theta(L)$ as a polynomial function that can be \textbf{computed recursively from L}, as K multiplications by a sparse L costs $O(K|E|) \ll O(n^2)$.
+			\item Solution: Chebyshev polynomial $T_k(x)$ of order k may be computed by the stable recurrence $T_k(x) = 2xT_{k-1}(x)-T_{k-2}(x)$ with $T_0=1$ and $T_1 = x$.
+			\item Chebyshev polynomial form an orthogonal basis for $L^2([−1, 1], dy/\sqrt{1-y^2})$ (\textbf{square integrable on [-1, 1]}).
+		\end{itemize}
+	\end{frame}
+	\begin{frame}{Recursive formulation for fast filtering}
+		Rescaling $\Lambda$ to [-1, 1]: \[\tilde{\Lambda} = \frac{2\Lambda}{\lambda_{max}}-I.\]
+		Thus
+		\[
+		\tilde{L} = U\tilde{\Lambda}U^T = U(\frac{2\Lambda}{\lambda_{max}}-I)U^T = \frac{2L}{\lambda_{max}}-UU^T = \frac{2L}{\lambda_{max}}-I.
+		\]
+		We have $\bar{x}_0 = x, \bar{x}_1 = \tilde{L}x,$ then
+		\[
+		\bar{x}_k = T_k(\tilde{L})x = 2\tilde{L}\bar{x}_{k-1}-\bar{x}_{k-2}.
+		\]
+		Finally we get
+		\[
+		y=g_\theta(L)x \approx \sum_{k=0}^{K-1}\theta_kT_k(\tilde{L})x = [\bar{x}_0, ..., \bar{x}_{K-1}]\mathbf{\theta}.
+		\]
+ 	\end{frame}
+ 	\begin{frame}{Output of convolution layer}
+ 		The $j^{th}$ output feature map of the sample $s$ is given by
+ 		\[
+ 		y_{s,j}= \sum_{i=1}^{F_{in}}g_{\theta_{i,j}}(L)x_{s,i} \in \mathbb{R}^n.
+ 		\]
+ 		Trainable parameters: $F_{in}\times F_{out}$ Chebyshev coefficients $\theta_{i,j} \in \mathbb{R}^k.$
+ 	\end{frame}
+	\section[GCN ICLR 2017]{Semi-Supervised Classification with Graph Convolutional Networks (ICLR2017)}
+		\begin{frame}{Contents}
+			\small
+			\tableofcontents[currentsection,hideallsubsections]
+		\end{frame}
+		\begin{frame}{Semi-Supervised Classification with GCN}
+			\begin{block}{Overview of Semi-Supervised Classification with GCN}
+				\begin{itemize}
+					\item Task: Semi-Supervised Classification
+					\item Input: Undirected graph G, not weighted
+				\end{itemize}
+			\end{block}
+			\begin{block}{Contribution}
+				\begin{itemize}
+					\item An efficient variant of GCN: Propose a localized first-order approximation of spectral graph convolutions.
+					\item Semi-supervised classification: Propose a scalable approach for semi-supervised learning.
+				\end{itemize}
+			\end{block}
+		\end{frame}
+		\begin{frame}{Semi-Supervised Classification with GCN}
+			Recall that in the previous paper we get
+			\[
+			y=g_\theta(L)x \approx \sum_{k=0}^{K}\theta_kT_k(\tilde{L})x,
+			\]
+			where $\tilde{L} = U\tilde{\Lambda}U^T = \frac{2L}{\lambda_{max}}-I.$
+			\newline\newline
+			In this paper, K is limited to 1, and replace L to the normalized form $I-D^{-1/2}AD^{1/2}$.\\
+			For normalized Graph Laplacian, there is a theory says $\lambda_{max} <= 2$, and $\lambda_{max} = 2$ if and only id G is bipartite. Further the paper approximate $\lambda_{max} = 2$, and gets
+			\[
+			y=g_\theta(L)x \approx \theta_0x - \theta_1D^{-1/2}AD^{-1/2}x
+			\]
+			with two free parameters $\theta_0$ and $\theta_1$.
+		\end{frame}
+		\begin{frame}{Semi-Supervised Classification with GCN}
+			\[
+			y=g_\theta(L)x \approx \theta_0x - \theta_1D^{-1/2}AD^{-1/2}x
+			\]
+			To constrain the number of parameters further to address overfitting and to minimize the number of operations, the paper constrains $\theta = \theta_0 = -\theta_1$ and gets
+			\[
+			y=g_\theta(L)x \approx \theta(I+D^{-1/2}AD^{1/2})x.
+			\]
+			To avoid numerical instabilities and exploding/vanishing gradients, the paper introduces a renormalization trick with $\tilde{A} = A + I$ and $\tilde{D}_{ii} = \sum_{j}\tilde{A}_{ij}$, and gets
+			\[
+			y=g_\theta(L)x \approx \theta \tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2}x.
+			\]
+			The formula can be generalized to C input channels and F filters, and gets the well-know GCN formula
+			\[
+			H^{(l+1)} = \sigma(\tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2}H^{(l)}W^{(l)}),
+			\]
+			where $W^{(l)} \in \mathbb{R}^{C\times F}$ is trainable parameters.
+		\end{frame}
+		\begin{frame}{Semi-Supervised Classification with GCN}
+			\[
+			H^{(l+1)} = \sigma(\tilde{D}^{-1/2}\tilde{A}\tilde{D}^{-1/2}H^{(l)}W^{(l)})
+			\]
+			can also be written as (here $d_i=|N_i|$)
+			\[
+			h_i^{(l+1)} = \sigma(\sum_{j \in N_i}\frac{1}{\sqrt{d_id_j}}h_j^{(l)}W^{(l)}).
+			\]
+		\end{frame}
+		\begin{frame}{Semi-supervised classification with GCN}
+			\[
+			Loss=-\sum_{l \in Y_L}\sum_{f=1}^{F} Y_{lf}ln(Z_{lf})
+			\]
+			\includegraphics[width=12cm]{1.jpg}
+		\end{frame}
+	
+	\section[R-GCN ESWC 2018]{Modeling Relational Data with Graph Convolutional Networks (ESWC 2018)}
+		\begin{frame}{Contents}
+			\small
+			\tableofcontents[currentsection,hideallsubsections]
+		\end{frame}
+		\begin{frame}{R-GCN}
+			\begin{block}{Overview of R-GCN}
+				\begin{itemize}
+					\item Task: (knowledge base) Link prediction (recovery of missing facts) and entity classification (recovery of missing entity attributes)
+					\item Input: \textbf{Directed graph}
+				\end{itemize}
+			\end{block}
+			\begin{block}{Contribution}
+				\begin{itemize}
+					\item Model GCN to multiple directed graphs.
+					\item Propose two regularization methods.
+				\end{itemize}
+			\end{block}
+		\end{frame}
+		\begin{frame}{R-GCN}
+			Input of R-GCN:
+			\begin{itemize}
+				\item Each relation is a directed graph (so input is directed multi-graph).
+				\item Different relations share the same vertices set.
+				\item To handle the directed graph, the paper separate it into two graphs, thus \textbf{consider the in-edges and out-edges independently}.
+				\item It adds a self-loop graph.
+			\end{itemize}
+			R-GCN uses the propagation formula:
+			\[
+			h_i^{(l+1)} = \sigma(\sum_{r \in R} \sum_{j \in N_i^r} \frac{1}{d_i^r} W_r^{(l)}h_j^{(l)}+ W_0h_i^{(l)}).
+			\]
+		\end{frame}
+		\begin{frame}{R-GCN}
+			\begin{center}
+				\includegraphics[width=7cm]{2.jpg}
+			\end{center}
+		\end{frame}
+		\begin{frame}{The normalization}
+			\begin{itemize}
+				\item Basic decomposition constrains shared basis between relations:
+				\[
+				W_r^{(l)} = \sum_{b=1}^{B}a_{rb}^{(l)}V_b^{(l)}.
+				\]
+				\item Block-diagonal decomposition constrains sparse weight matrix:
+				\[
+				W_r^{(l)} = \oplus_{b=1}^{B} Q_{br}^{(l)}.
+				\]
+				In other words, 
+				\[
+				W_r^{(l)} = diag(Q_{1r}^{(l)}, ..., Q_{Br}^{(l)}).
+				\]
+			\end{itemize}
+		\end{frame}
+		\begin{frame}{R-GCN}
+			\begin{center}
+				\includegraphics[width=10cm]{3.jpg}
+			\end{center}
+			\begin{itemize}
+				\item Entity classification: predict missing entities.
+				\item In link prediction, DistMult associates every relation r with a diagonal matrix $R_r \in \mathbb{R}^{d\times d}$, and give a score to a link $f(s,r,o)=e_s^TR_re_o$.
+			\end{itemize}
+		\end{frame}
+		\begin{frame}{The loss functions}
+			\begin{itemize}
+				\item Entity classification:
+				\[
+				Loss = -\sum_{i \in Y}\sum_{k=1}^{K}t_{ik}lnh_{ik}^{(L)}.
+				\]
+				\item Link prediction:
+				\[
+				Loss = -\frac{1}{(1+w)|\hat{\mathcal{E}}|}\sum_{(s,r,o,y)\in \tau}ylog\ l(f(s, r, o)) + (1-y)log (1-l(f(s,r,o))),
+				\]
+				where l is the logistic sigmoid function.
+			\end{itemize}
+		\end{frame}
+		\begin{frame}{Reference}
+		\begin{itemize}
+			\item mathworld.wolfram.com
+			\item Graph Signal Processing Seminars of Prof. Luis Gustavo Nonato
+			\item Math behind GCN of Zhiping Xiao
+			\item  "Mathematical Analysis" of CHEN CHUANZHANG
+		\end{itemize}
+	\end{frame}
+\begin{frame}{}
+	\begin{center}
+		\huge{The End}
+	\end{center}
+\end{frame}
+\end{document}

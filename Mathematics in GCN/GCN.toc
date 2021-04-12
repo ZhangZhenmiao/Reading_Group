@@ -1,0 +1,7 @@
+\beamer@sectionintoc {1}{Overview}{2}{0}{1}
+\beamer@sectionintoc {2}{From Fourier Series to Fourier Transform}{4}{0}{2}
+\beamer@sectionintoc {3}{Spectral Graph Theory: Graph Laplacian}{23}{0}{3}
+\beamer@sectionintoc {4}{Graph Fourier Transform and Graph convolution}{29}{0}{4}
+\beamer@sectionintoc {5}{Convolutional Neural Networks on Graphs with Fast Localized Spectral Filtering (NIPS 2016)}{36}{0}{5}
+\beamer@sectionintoc {6}{Semi-Supervised Classification with Graph Convolutional Networks (ICLR2017)}{43}{0}{6}
+\beamer@sectionintoc {7}{Modeling Relational Data with Graph Convolutional Networks (ESWC 2018)}{49}{0}{7}
