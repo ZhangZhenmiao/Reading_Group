@@ -13,6 +13,7 @@
   * Eigenvalues Decomposition
   * Variance Maximization
   * K-dimension Representation
+* Curse of dimension
 ## Mathematics in Graph Convolutional Network (24 Mar 2021)
 * From Fourier Series to Fourier Transform
   * Inner Product
