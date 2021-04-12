@@ -1,0 +1,14 @@
+\beamer@sectionintoc {1}{Overview}{2}{0}{1}
+\beamer@subsectionintoc {1}{1}{Motivation}{3}{0}{1}
+\beamer@sectionintoc {2}{Subset Selection}{5}{0}{2}
+\beamer@subsectionintoc {2}{1}{Best Subset Selection}{6}{0}{2}
+\beamer@subsectionintoc {2}{2}{Stepwise Selection}{11}{0}{2}
+\beamer@sectionintoc {3}{Shrinkage Methods}{15}{0}{3}
+\beamer@subsectionintoc {3}{1}{Ridge Regression}{16}{0}{3}
+\beamer@subsectionintoc {3}{2}{Lasso Regression}{28}{0}{3}
+\beamer@subsectionintoc {3}{3}{Parameter Selection}{38}{0}{3}
+\beamer@sectionintoc {4}{Dimension Reduction Methods}{39}{0}{4}
+\beamer@subsectionintoc {4}{1}{The Framework}{40}{0}{4}
+\beamer@subsectionintoc {4}{2}{Principle Components Regression}{41}{0}{4}
+\beamer@subsectionintoc {4}{3}{Partial Least Squares}{50}{0}{4}
+\beamer@sectionintoc {5}{Considerations in High Dimensions}{51}{0}{5}
