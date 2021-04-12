@@ -6,8 +6,8 @@
 * Ridge Regression
   * Lagrange Multiplier
   * Bayesian Interpretation (Maximum a Posteriori Estimation)
-* LASSO regression
-  * Bayesian Regression (Maximum a Posteriori Estimation)
+* LASSO Regression
+  * Bayesian Interpretation (Maximum a Posteriori Estimation)
   * Shrinking parameters towards zero
 * Principal Component Analysis (PCA)
   * Eigenvalues Decomposition
