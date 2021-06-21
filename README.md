@@ -25,3 +25,6 @@
 * Convolutional Neural Networks on Graphs with Fast Localized Spectral Filtering (NIPS 2016)
 * Semi-Supervised Classification with Graph Convolutional Networks (ICLR2017)
 * Modeling Relational Data with Graph Convolutional Networks (ESWC 2018)
+## Attention Is All You Need (26 May 2021)
+* Transformer
+* Self/Global/Soft/Local/Hard Attention
