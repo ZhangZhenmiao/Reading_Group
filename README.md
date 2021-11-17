@@ -28,3 +28,5 @@
 ## Attention Is All You Need (26 May 2021)
 * Transformer
 * Self/Global/Soft/Local/Hard Attention
+## Locality-sensitive hashing (17 Nov 2021)
+* Locality-sensitive hashing
